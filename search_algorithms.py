@@ -152,3 +152,27 @@ def uniform_cost_search(graph: Graph, start: str, end: str) -> List[str]:
 
     # Reverse the path to get it from start to end
     return path[::-1]
+
+
+def iterative_deepening_search(graph: Graph, start: str, end: str, max_depth: Optional[int] = 20) -> List[str]:
+    """
+    Perform iterative deepening depth-first search traversal on a graph to find a path
+    between a given start and end node within a specified maximum depth.
+
+    Args:
+        graph (Graph): The graph to be traversed.
+        start (str): The name of the start node.
+        end (str): The name of the end node.
+        max_depth (Optional[int]): The maximum depth to explore during each iteration. Defaults to 20.
+
+    Returns:
+        List[str]: The path from start to end node, if one exists within the specified maximum depth.
+    """
+    for current_depth in range(max_depth + 1):
+        path = depth_first_search(graph, start, end, current_depth)
+
+        if path:
+            return path
+
+    # If the destination node is unreachable within the specified maximum depth
+    return []
