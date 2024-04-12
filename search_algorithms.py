@@ -1,6 +1,6 @@
 from collections import deque
-from typing import Dict, List, Optional
-from graph import Graph
+from typing import Callable, Dict, List, Optional
+from graph import Graph, Node
 from heapq import heappop as pop, heappush as push
 
 
@@ -176,3 +176,83 @@ def iterative_deepening_search(graph: Graph, start: str, end: str, max_depth: Op
 
     # If the destination node is unreachable within the specified maximum depth
     return []
+
+
+def bidirectional_search(graph: Graph, start: str, end: str, heuristic: Callable[[Node, Node], float]) -> List[str]:
+    """
+    Perform bidirectional search traversal on a graph to find the shortest path
+    between a given start and end node using a given heuristic function.
+
+    Args:
+        graph (Graph): The graph to be traversed.
+        start (str): The name of the start node.
+        end (str): The name of the end node.
+        heuristic (Callable[[Node, Node], float]): The heuristic function to estimate the cost
+            from a node to the end node.
+
+    Returns:
+        List[str]: The shortest path from start to end node.
+
+    """
+    # Initialize parent maps and priority queues for forward and backward search
+    forward_parent_map = {start: None}
+    backward_parent_map = {end: None}
+    forward_priority_queue = [(0, start)]  # Priority queue for forward search
+    backward_priority_queue = [(0, end)]  # Priority queue for backward search
+    connected_at = None  # Variable to store the node where the two searches meet
+
+    while forward_priority_queue and backward_priority_queue:
+        # Forward search
+        forward_cost, forward_node_name = pop(forward_priority_queue)
+        if forward_node_name in backward_parent_map:
+            connected_at = forward_node_name  # Nodes meet, break the loop
+            break
+
+        for neighbor_name, cost in graph.nodes[forward_node_name].neighbours:
+            if neighbor_name in forward_parent_map:
+                continue
+
+            neighbor_cost = cost + forward_cost
+            heuristic_value = heuristic(
+                graph.nodes[neighbor_name], graph.nodes[end])
+            total_cost = neighbor_cost + heuristic_value
+
+            forward_parent_map[neighbor_name] = forward_node_name
+            push(forward_priority_queue, (total_cost, neighbor_name))
+
+        # Backward search
+        backward_cost, backward_node_name = pop(backward_priority_queue)
+        if backward_node_name in forward_parent_map:
+            connected_at = backward_node_name  # Nodes meet, break the loop
+            break
+
+        for neighbor_name, cost in graph.nodes[backward_node_name].neighbours:
+            if neighbor_name in backward_parent_map:
+                continue
+
+            neighbor_cost = cost + backward_cost
+            heuristic_value = heuristic(
+                graph.nodes[neighbor_name], graph.nodes[start])
+            total_cost = neighbor_cost + heuristic_value
+
+            backward_parent_map[neighbor_name] = backward_node_name
+            push(backward_priority_queue, (total_cost, neighbor_name))
+
+    # If the two searches never meet, return an empty path
+    if not connected_at:
+        return []
+
+    # Reconstruct the path
+    path = []
+    curr_node_name = connected_at
+    while curr_node_name:
+        path.append(curr_node_name)  # Add nodes from the forward search path
+        curr_node_name = forward_parent_map.get(curr_node_name)
+    path.reverse()  # Reverse the forward search path
+
+    curr_node_name = backward_parent_map.get(connected_at)
+    while curr_node_name:
+        path.append(curr_node_name)  # Add nodes from the backward search path
+        curr_node_name = backward_parent_map.get(curr_node_name)
+
+    return path
