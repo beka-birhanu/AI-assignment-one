@@ -307,3 +307,58 @@ def greedy_search(graph: Graph, start: str, end: str, heuristic: Callable[[Node,
 
     # Reverse the path to get it from start to end
     return path[::-1]
+
+
+def a_star_search(graph: Graph, start: str, end: str, heuristic: Callable[[Node, Node], float]) -> List[str]:
+    """
+    Perform A* search using a heuristic function.
+
+    Args:
+        graph (Graph): The graph to search.
+        start (str): The starting node.
+        end (str): The goal node.
+        heuristic (Callable[[Node, Node], float]): Heuristic function that estimates
+            the cost from a node to the goal.
+
+    Returns:
+        List[str]: The path from start to end if found, an empty list otherwise.
+    """
+    # Priority queue for the search
+    priority_queue = [(0, start, 0)]  # (total_cost, node_name, heuristic_cost)
+    # Dictionary to store the parent node of each visited node
+    parent_map = {start: None}
+
+    while priority_queue:
+        curr_node_total_cost, curr_node_name, curr_node_heuristics = pop(
+            priority_queue)
+
+        # Check if the current node is the destination node
+        if curr_node_name == end:
+            break  # Terminate the search once the goal is reached
+
+        # Traverse the neighbors of the current node
+        curr_path_cost = curr_node_total_cost - curr_node_heuristics
+        for neighbor_name, cost in graph.nodes[curr_node_name].neighbours:
+            heuristic_value = heuristic(
+                graph.nodes[neighbor_name], graph.nodes[end])
+            neighbor_cost = curr_path_cost + cost
+
+            # Update parent map and enqueue the neighbor if not visited
+            if neighbor_name not in parent_map:
+                parent_map[neighbor_name] = curr_node_name
+                push(priority_queue, (heuristic_value +
+                     neighbor_cost, neighbor_name, heuristic_value))
+
+    # If the destination node was not found
+    if end not in parent_map:
+        return []
+
+    # Reconstruct the path from end to start
+    path = []
+    curr_node_name = end
+    while curr_node_name:
+        path.append(curr_node_name)
+        curr_node_name = parent_map[curr_node_name]
+
+    # Reverse the path to get it from start to end
+    return path[::-1]
