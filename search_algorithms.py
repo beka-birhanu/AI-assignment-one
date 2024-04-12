@@ -1,6 +1,7 @@
 from collections import deque
-from typing import List
+from typing import Dict, List, Optional
 from graph import Graph
+from heapq import heappop as pop, heappush as push
 
 
 def breadth_first_search(graph: Graph, start: str, end: str) -> List[str]:
@@ -96,6 +97,58 @@ def depth_first_search(graph: Graph, start: str, end: str, max_depth: Optional[i
     while curr_node_name:
         path.append(curr_node_name)
         curr_node_name = parent_map.get(curr_node_name)
+
+    # Reverse the path to get it from start to end
+    return path[::-1]
+
+
+def uniform_cost_search(graph: Graph, start: str, end: str) -> List[str]:
+    """
+    Perform uniform-cost search traversal on a graph to find the shortest path
+    between a given start and end node.
+
+    Args:
+        graph (Graph): The graph to be traversed.
+        start (str): The name of the start node.
+        end (str): The name of the end node.
+
+    Returns:
+        List[str]: The shortest path from start to end node.
+
+    """
+    # Priority queue for UCS traversal
+    priority_queue = [(0, start)]
+    # Dictionary to store the parent node and path cost of each visited node
+    parent_map: Dict[str, Optional[str]] = {start: None}
+    path_cost_map: Dict[str, float] = {start: 0}
+
+    while priority_queue:
+        curr_path_cost, curr_node_name = pop(priority_queue)
+
+        # Check if the current node is the destination node
+        if curr_node_name == end:
+            break
+
+        # Traverse the neighbors of the current node
+        for neighbor_name, cost in graph.nodes[curr_node_name].neighbours:
+            total_cost = curr_path_cost + cost
+
+            # Update parent and path cost if the neighbor is not visited or found a shorter path
+            if neighbor_name not in parent_map or total_cost < path_cost_map[neighbor_name]:
+                parent_map[neighbor_name] = curr_node_name
+                path_cost_map[neighbor_name] = total_cost
+                push(priority_queue, (total_cost, neighbor_name))
+
+    # If the destination node was not found
+    if end not in parent_map:
+        return []
+
+    # Reconstruct the path from end to start
+    path = []
+    curr_node_name = end
+    while curr_node_name:
+        path.append(curr_node_name)
+        curr_node_name = parent_map[curr_node_name]
 
     # Reverse the path to get it from start to end
     return path[::-1]
