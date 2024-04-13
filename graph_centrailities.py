@@ -220,7 +220,6 @@ class GraphCentrality:
 
     
         top_betweenness_centrality_nodes = [vertices[i] for i in range(n) if betweenness[i] == numpy.max(betweenness)]
-        print("The Vertices with Highest betweenness centrality are", *top_betweenness_centrality_nodes)
 
         return betweenness,top_betweenness_centrality_nodes
 
