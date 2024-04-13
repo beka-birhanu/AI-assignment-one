@@ -108,5 +108,45 @@ class GraphCentrality:
 
         
         return centrality_scores
+
+    def pagerank(self,graph, d=0.85, max_iter=100, tolerance=1e-6):
+        nodes = list(graph.nodes.keys())
+        # Convert the graph into an adjacency matrix
+        adjacency_matrix = self.adjacency_matrix(graph)
+
+        # Convert the adjacency matrix to a NumPy array
+        adjacency_matrix = numpy.array(adjacency_matrix)
+
+        # Get the number of nodes in the graph
+        N = len(adjacency_matrix)
+
+        # Initialize PageRank scores with equal weights
+        pagerank_scores = numpy.ones(N) / N
+
+        for _ in range(max_iter):
+            # Normalize the adjacency matrix to represent transition probabilities
+            row_sums = adjacency_matrix.sum(axis=1, keepdims=True)
+            transition_matrix = numpy.where(row_sums != 0, adjacency_matrix / row_sums, 1 / N)
+
+            # Calculate the next iteration of PageRank scores
+            new_pagerank_scores = (1 - d) / N + d * numpy.dot(transition_matrix.T, pagerank_scores)
+
+            # Check for convergence
+            if numpy.linalg.norm(new_pagerank_scores - pagerank_scores, 2) < tolerance:
+                break
+
+            pagerank_scores = new_pagerank_scores
+
+        top_pagerank_centralities = []
+        top = max(pagerank_scores)
+
+        for i in range(len(pagerank_scores)):
+            if pagerank_scores[i] == top:
+                top_pagerank_centralities.append(nodes[i])
+        
+
+        print("The Vertices with Highest page rank centrality are", *top_pagerank_centralities)
+
+        return pagerank_scores
     
     
