@@ -36,11 +36,10 @@ class GraphCentrality:
                 top_degree_centralities.append(centrality)
         
 
-        print("The Vertices with Highest degree centrality are", *top_degree_centralities)
         
 
         # Final degree Centrality
-        return degree_centralities
+        return degree_centralities,top_degree_centralities
 
     def floyd_warshall(self,adj_matrix):
         n = len(adj_matrix)
@@ -55,7 +54,7 @@ class GraphCentrality:
 
     def closeness_centrality(self,graph):
         adj_matrix = self.adjacency_matrix(graph)
-        nodes = list(graph.keys())
+        nodes = list(graph.nodes.keys())
         dist_matrix = self.floyd_warshall(adj_matrix)
         n = len(adj_matrix)
         centralities = []
@@ -77,65 +76,62 @@ class GraphCentrality:
                 topcloseness_centralities.append(nodes[i])
         
 
-        print("The Vertices with Highest closeness centrality are", *topcloseness_centralities)
         
-        return centralities
+        return centralities,topcloseness_centralities
 
-    def eigenvector_centrality(self,graph):
-        adj_matrix = self.adjacency_matrix(graph)
-        eigenvalues, eigenvectors = numpy.linalg.eig(adj_matrix)
-        
-        # Find the eigenvector corresponding to the largest eigenvalue
-        max_eigenvalue_index = numpy.argmax(eigenvalues)
-        max_eigenvector = numpy.abs(eigenvectors[:, max_eigenvalue_index])
-        
-        # Normalize the eigenvector
-        max_eigenvector /= max_eigenvector.sum()
-        
-        # Create a dictionary mapping node names to eigenvector centrality scores
-        node_names = list(graph.nodes.keys())
-        centrality_scores = {node_names[i]: max_eigenvector[i] for i in range(len(node_names))}
-
-        top_eigenvector_centralities = []
-        top = max(centrality_scores.values())
-
-        for centrality in centrality_scores:
-            if centrality_scores[centrality] == top:
-                top_eigenvector_centralities.append(centrality)
-        
-
-        print("The Vertices with Highest eiganvector centrality are", *top_eigenvector_centralities)
-
-        
-        return centrality_scores
-
-    def pagerank(self,graph, d=0.85, max_iter=100, tolerance=1e-6):
+    def eigenvector_centrality(self,graph,iter=200,tolerance=1e-6):
         nodes = list(graph.nodes.keys())
-        # Convert the graph into an adjacency matrix
-        adjacency_matrix = self.adjacency_matrix(graph)
+        adj_matrix = self.adjacency_matrix(graph)
+        centrality_scores = numpy.ones(len(nodes))
+        centrality_scores /= numpy.linalg.norm(centrality_scores)
+        
+        
+        for i in range(iter):
+            new_centrality = numpy.dot(adj_matrix, centrality_scores)
 
-        # Convert the adjacency matrix to a NumPy array
-        adjacency_matrix = numpy.array(adjacency_matrix)
+         
+            new_centrality /= numpy.linalg.norm(new_centrality)
 
-        # Get the number of nodes in the graph
-        N = len(adjacency_matrix)
-
-        # Initialize PageRank scores with equal weights
-        pagerank_scores = numpy.ones(N) / N
-
-        for _ in range(max_iter):
-            # Normalize the adjacency matrix to represent transition probabilities
-            row_sums = adjacency_matrix.sum(axis=1, keepdims=True)
-            transition_matrix = numpy.where(row_sums != 0, adjacency_matrix / row_sums, 1 / N)
-
-            # Calculate the next iteration of PageRank scores
-            new_pagerank_scores = (1 - d) / N + d * numpy.dot(transition_matrix.T, pagerank_scores)
-
-            # Check for convergence
-            if numpy.linalg.norm(new_pagerank_scores - pagerank_scores, 2) < tolerance:
+           
+            if numpy.linalg.norm(new_centrality - centrality_scores, 2) < tolerance:
                 break
 
-            pagerank_scores = new_pagerank_scores
+            centrality_scores = new_centrality
+
+        top_eigenvector_centralities = []
+        top = max(centrality_scores)
+
+        for i in range(len(centrality_scores)):
+            if centrality_scores[i] == top:
+                top_eigenvector_centralities.append(nodes[i])
+        
+
+        
+        return centrality_scores,top_eigenvector_centralities
+
+
+    def pagerank_centrality(self,graph, d=0.85, max_iter=100, tolerance=1e-6):
+        nodes = list(graph.nodes.keys())
+        
+        adj_matrix = numpy.array(self.adjacency_matrix(graph))
+        n = len(adj_matrix)
+
+      
+        centrality_scores = numpy.ones(n) / n
+
+        for i in range(max_iter):
+           
+            sums = adj_matrix.sum(axis=1, keepdims=True)
+            transition_matrix = numpy.where(sums != 0, adj_matrix / sums, 1 / n)
+
+            
+            new_centrality_scores = (1 - d) / n + d * numpy.dot(transition_matrix.T, centrality_scores)
+
+           
+            if numpy.linalg.norm(new_centrality_scores - centrality_scores, 2) < tolerance:
+                break
+
+            pagerank_scores = new_centrality_scores
 
         top_pagerank_centralities = []
         top = max(pagerank_scores)
@@ -145,63 +141,56 @@ class GraphCentrality:
                 top_pagerank_centralities.append(nodes[i])
         
 
-        print("The Vertices with Highest page rank centrality are", *top_pagerank_centralities)
+        return pagerank_scores,top_pagerank_centralities
 
-        return pagerank_scores
-
-    def katz_centrality(self,graph, alpha=0.1, beta=1.0, max_iter=100, tol=1e-6):
-        # Convert the graph into an adjacency matrix
-        adjacency_matrix = self.adjacency_matrix(graph)
-        nodes = list(graph.nodes.keys())
-
-        n = len(adjacency_matrix)
+    def katz_centrality(self,graph, a=0.1, b=1.0, max_iter=100, tol=1e-6):
         
-        # Initialize centrality scores
-        centrality = numpy.zeros(n)
-        beta = numpy.full(n, beta)
+        adj_matrix = self.adjacency_matrix(graph)
+        nodes = list(graph.nodes.keys())
+        n = len(nodes)
+        
+    
+        katz_centrality = numpy.zeros(n)
+        b = numpy.full(n, b)
 
         for _ in range(max_iter):
-            # Update centrality scores using the Katz centrality equation
-            new_centrality = alpha * numpy.dot(adjacency_matrix, centrality) + beta
+            
+            new_centrality = a * numpy.dot(adj_matrix, katz_centrality) + b
 
-            # Check for convergence
-            if numpy.linalg.norm(new_centrality - centrality, 2) < tol:
+            if numpy.linalg.norm(new_centrality - katz_centrality, 2) < tol:
                 break
 
-            centrality = new_centrality
+            katz_centrality = new_centrality
 
-        # Normalize centrality scores
-        centrality /= numpy.linalg.norm(centrality)
+        katz_centrality /= numpy.linalg.norm(katz_centrality)
         
-        # Identify top-ranked nodes
+
+        top = max(katz_centrality)
         top_katz_centralities = []
-        top = numpy.max(centrality)
-
-        for i in range(len(centrality)):
-            if centrality[i] == top:
+        for i in range(len(katz_centrality)):
+            if katz_centrality[i] == top:
                 top_katz_centralities.append(nodes[i])
-        
-        print("The Vertices with Highest katz centrality are", *top_katz_centralities)
                 
-        return centrality
+        return katz_centrality,top_katz_centralities
 
     def betweenness_centrality(self,graph):
+
         adj_matrix = self.adjacency_matrix(graph)
         vertices = list(graph.nodes.keys())
         n = len(vertices)
         
         betweenness = numpy.zeros(n)  # Initialize betweenness centrality scores
         
-        for s in range(n):  # Iterate over all nodes as potential sources
+        for i in range(n):  # Iterate over all nodes as potential sources
             stack = []  # Stack for DFS
             predecessors = [[] for _ in range(n)]  # List of predecessors for each node
             num_shortest_paths = numpy.zeros(n)  # Number of shortest paths from s to each node
             distance = numpy.full(n, -1)  # Distance from s to each node
-            distance[s] = 0  # Distance from s to s is 0
-            num_shortest_paths[s] = 1  # There is one shortest path from s to s
+            distance[i] = 0  # Distance from s to s is 0
+            num_shortest_paths[i] = 1  # There is one shortest path from s to s
 
             # BFS to find shortest paths and count them
-            queue = [s]
+            queue = [i]
             while queue:
                 v = queue.pop(0)
                 stack.append(v)
@@ -220,7 +209,7 @@ class GraphCentrality:
                 w = stack.pop()
                 for v in predecessors[w]:
                     delta[v] += (num_shortest_paths[v] / num_shortest_paths[w]) * (1 + delta[w])
-                if w != s:
+                if w != i:
                     betweenness[w] += delta[w]
 
         
@@ -229,11 +218,14 @@ class GraphCentrality:
         if max_betweenness > 0:
             betweenness /= max_betweenness
 
-            
+    
         top_betweenness_centrality_nodes = [vertices[i] for i in range(n) if betweenness[i] == numpy.max(betweenness)]
         print("The Vertices with Highest betweenness centrality are", *top_betweenness_centrality_nodes)
 
-        return betweenness
+        return betweenness,top_betweenness_centrality_nodes
+
+
+
 
     
     
