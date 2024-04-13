@@ -184,5 +184,56 @@ class GraphCentrality:
         print("The Vertices with Highest katz centrality are", *top_katz_centralities)
                 
         return centrality
+
+    def betweenness_centrality(self,graph):
+        adj_matrix = self.adjacency_matrix(graph)
+        vertices = list(graph.nodes.keys())
+        n = len(vertices)
+        
+        betweenness = numpy.zeros(n)  # Initialize betweenness centrality scores
+        
+        for s in range(n):  # Iterate over all nodes as potential sources
+            stack = []  # Stack for DFS
+            predecessors = [[] for _ in range(n)]  # List of predecessors for each node
+            num_shortest_paths = numpy.zeros(n)  # Number of shortest paths from s to each node
+            distance = numpy.full(n, -1)  # Distance from s to each node
+            distance[s] = 0  # Distance from s to s is 0
+            num_shortest_paths[s] = 1  # There is one shortest path from s to s
+
+            # BFS to find shortest paths and count them
+            queue = [s]
+            while queue:
+                v = queue.pop(0)
+                stack.append(v)
+                for w in range(n):
+                    if adj_matrix[v][w] != 0:  # There is an edge (v, w)
+                        if distance[w] < 0:  # w is visited for the first time
+                            queue.append(w)
+                            distance[w] = distance[v] + 1
+                        if distance[w] == distance[v] + 1:  # w is adjacent to v on a shortest path
+                            num_shortest_paths[w] += num_shortest_paths[v]
+                            predecessors[w].append(v)
+
+            # Accumulate dependencies
+            delta = numpy.zeros(n)  # Dependency of each node
+            while stack:
+                w = stack.pop()
+                for v in predecessors[w]:
+                    delta[v] += (num_shortest_paths[v] / num_shortest_paths[w]) * (1 + delta[w])
+                if w != s:
+                    betweenness[w] += delta[w]
+
+        
+        # Normalize betweenness centrality scores
+        max_betweenness = numpy.max(betweenness)
+        if max_betweenness > 0:
+            betweenness /= max_betweenness
+
+            
+        top_betweenness_centrality_nodes = [vertices[i] for i in range(n) if betweenness[i] == numpy.max(betweenness)]
+        print("The Vertices with Highest betweenness centrality are", *top_betweenness_centrality_nodes)
+
+        return betweenness
+
     
     
