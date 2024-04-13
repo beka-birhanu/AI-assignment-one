@@ -148,5 +148,41 @@ class GraphCentrality:
         print("The Vertices with Highest page rank centrality are", *top_pagerank_centralities)
 
         return pagerank_scores
+
+    def katz_centrality(self,graph, alpha=0.1, beta=1.0, max_iter=100, tol=1e-6):
+        # Convert the graph into an adjacency matrix
+        adjacency_matrix = self.adjacency_matrix(graph)
+        nodes = list(graph.nodes.keys())
+
+        n = len(adjacency_matrix)
+        
+        # Initialize centrality scores
+        centrality = numpy.zeros(n)
+        beta = numpy.full(n, beta)
+
+        for _ in range(max_iter):
+            # Update centrality scores using the Katz centrality equation
+            new_centrality = alpha * numpy.dot(adjacency_matrix, centrality) + beta
+
+            # Check for convergence
+            if numpy.linalg.norm(new_centrality - centrality, 2) < tol:
+                break
+
+            centrality = new_centrality
+
+        # Normalize centrality scores
+        centrality /= numpy.linalg.norm(centrality)
+        
+        # Identify top-ranked nodes
+        top_katz_centralities = []
+        top = numpy.max(centrality)
+
+        for i in range(len(centrality)):
+            if centrality[i] == top:
+                top_katz_centralities.append(nodes[i])
+        
+        print("The Vertices with Highest katz centrality are", *top_katz_centralities)
+                
+        return centrality
     
     
