@@ -55,7 +55,7 @@ class GraphCentrality:
 
     def closeness_centrality(self,graph):
         adj_matrix = self.adjacency_matrix(graph)
-       
+        nodes = list(graph.keys())
         dist_matrix = self.floyd_warshall(adj_matrix)
         n = len(adj_matrix)
         centralities = []
@@ -69,6 +69,44 @@ class GraphCentrality:
             else:
                 centralities.append(reachable_nodes / total_distance)
         
+        topcloseness_centralities = []
+        top = max(centralities)
+
+        for i in range(len(centralities)):
+            if centralities[i]== top:
+                topcloseness_centralities.append(nodes[i])
+        
+
+        print("The Vertices with Highest closeness centrality are", *topcloseness_centralities)
+        
         return centralities
+
+    def eigenvector_centrality(self,graph):
+        adj_matrix = self.adjacency_matrix(graph)
+        eigenvalues, eigenvectors = numpy.linalg.eig(adj_matrix)
+        
+        # Find the eigenvector corresponding to the largest eigenvalue
+        max_eigenvalue_index = numpy.argmax(eigenvalues)
+        max_eigenvector = numpy.abs(eigenvectors[:, max_eigenvalue_index])
+        
+        # Normalize the eigenvector
+        max_eigenvector /= max_eigenvector.sum()
+        
+        # Create a dictionary mapping node names to eigenvector centrality scores
+        node_names = list(graph.nodes.keys())
+        centrality_scores = {node_names[i]: max_eigenvector[i] for i in range(len(node_names))}
+
+        top_eigenvector_centralities = []
+        top = max(centrality_scores.values())
+
+        for centrality in centrality_scores:
+            if centrality_scores[centrality] == top:
+                top_eigenvector_centralities.append(centrality)
+        
+
+        print("The Vertices with Highest eiganvector centrality are", *top_eigenvector_centralities)
+
+        
+        return centrality_scores
     
     
