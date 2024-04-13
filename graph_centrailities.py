@@ -41,5 +41,34 @@ class GraphCentrality:
 
         # Final degree Centrality
         return degree_centralities
+
+    def floyd_warshall(self,adj_matrix):
+        n = len(adj_matrix)
+        dist = [[float('inf') if i != j and adj_matrix[i][j] == 0 else adj_matrix[i][j] for j in range(n)] for i in range(n)]
+        
+        for k in range(n):
+            for i in range(n):
+                for j in range(n):
+                    dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])
+        
+        return dist
+
+    def closeness_centrality(self,graph):
+        adj_matrix = self.adjacency_matrix(graph)
+       
+        dist_matrix = self.floyd_warshall(adj_matrix)
+        n = len(adj_matrix)
+        centralities = []
+        
+        for i in range(n):
+            reachable_nodes = sum(1 for d in dist_matrix[i] if d != float('inf') and d != 0)
+            total_distance = sum(d for d in dist_matrix[i] if d != float('inf') and d != 0)
+            
+            if total_distance == 0:
+                centralities.append(0.0)
+            else:
+                centralities.append(reachable_nodes / total_distance)
+        
+        return centralities
     
     
