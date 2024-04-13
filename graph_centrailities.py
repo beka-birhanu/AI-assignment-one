@@ -7,17 +7,18 @@ import numpy
 class GraphCentrality:
    
     def adjacency_matrix(self,graph):
-        node_names = list(graph.nodes.keys())
-        adj_matrix = numpy.zeros((len(node_names), len(node_names)))
+        n = len(graph.nodes)
+        nodes = list(graph.nodes.keys())
+        adj_matrix = [[0 for i in range(n)] for j in range(n)]
         
-        # Construct the adjacency matrix
-        for i, node_name in enumerate(node_names):
-            node = graph.nodes[node_name]
-            for neighbor_name, weight in node.neighbours:
-                j = node_names.index(neighbor_name)
-                adj_matrix[i, j] = weight
-            
-        return adj_matrix
+        for node in graph.nodes:
+            row_index = nodes.index(node)
+            # print("nodes values", adj_list[node])
+            for neighbor in graph.nodes[node][1]:
+                col_index = nodes.index(neighbor[0])
+                adj_matrix[row_index][col_index] = 1
+                
+        return adj_matrix, nodes
     def degree_centrality(self,graph):
         degree_centralities = {}
         number_of_nodes = len(graph.nodes)
