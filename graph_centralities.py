@@ -66,7 +66,7 @@ def closeness_centrality(graph: Graph) -> tuple:
     Returns:
         tuple: A tuple containing a list of closeness scores for all nodes and a list of nodes with the highest closeness centrality scores.
     """
-    node_names = [node for node in graph.nodes]
+    node_names = [node_name for node_name in graph.nodes.keys()]
     closeness_scores = [0 for _ in range(len(node_names))]
 
     top_ranked = []
@@ -95,7 +95,7 @@ def closeness_centrality(graph: Graph) -> tuple:
         elif closeness_scores[i] == max_closeness:
             top_ranked.append((node_names[i], max_closeness))
 
-    return closeness_scores, top_ranked
+    return dict(zip(node_names, closeness_scores)), top_ranked
 
 
 def eigenvector_centrality(graph: Graph, max_iterations: int = 100, tolerance: float = 1e-6) -> tuple:
@@ -127,7 +127,7 @@ def eigenvector_centrality(graph: Graph, max_iterations: int = 100, tolerance: f
     top_centrality_nodes = [node_names[i] for i, centrality in enumerate(
         centrality_values) if centrality == max_centrality]
 
-    return centrality_values, top_centrality_nodes
+    return dict(zip(node_names, centrality_values)), top_centrality_nodes
 
 
 def pagerank_centrality(graph: Graph, damping_factor: float = 0.85, max_iterations: int = 100, tolerance: float = 1e-6) -> tuple:
@@ -162,7 +162,7 @@ def pagerank_centrality(graph: Graph, damping_factor: float = 0.85, max_iteratio
     top_centrality_nodes = [node_names[i] for i in range(
         len(pagerank_scores)) if pagerank_scores[i] == max_centrality]
 
-    return pagerank_scores, top_centrality_nodes
+    return dict(zip(node_names, pagerank_scores)), top_centrality_nodes
 
 
 def katz_centrality(graph: Graph, alpha: float = 0.1, beta: float = 1.0, max_iter: int = 100, tol: float = 1e-6) -> tuple:
@@ -179,7 +179,7 @@ def katz_centrality(graph: Graph, alpha: float = 0.1, beta: float = 1.0, max_ite
     Returns:
         tuple: A tuple containing a list of centrality values for all nodes and a list of nodes with the highest centrality values.
     """
-    adj_matrix, nodes = adjacency_matrix(graph)
+    adj_matrix, node_names = adjacency_matrix(graph)
     n = len(adj_matrix)
 
     ketz_centrality = numpy.zeros(n)
@@ -197,10 +197,10 @@ def katz_centrality(graph: Graph, alpha: float = 0.1, beta: float = 1.0, max_ite
     ketz_centrality /= numpy.linalg.norm(ketz_centrality)
 
     max_centrality = max(ketz_centrality)
-    top_centrality_nodes = [(nodes[i], ketz_centrality[i])
+    top_centrality_nodes = [(node_names[i], ketz_centrality[i])
                             for i in range(n) if ketz_centrality[i] == max_centrality]
 
-    return ketz_centrality, top_centrality_nodes
+    return dict(zip(node_names, ketz_centrality)), top_centrality_nodes
 
 
 def betweenness_centrality(graph: Graph) -> tuple:
@@ -213,8 +213,8 @@ def betweenness_centrality(graph: Graph) -> tuple:
     Returns:
         tuple: A tuple containing a list of betweenness centrality values for all nodes and a list of nodes with the highest betweenness centrality values.
     """
-    nodes = list(graph.nodes.keys())
-    n = len(nodes)
+    node_names = list(graph.nodes.keys())
+    n = len(node_names)
     betweenness = numpy.zeros(n)
 
     for s in range(n):
@@ -229,8 +229,8 @@ def betweenness_centrality(graph: Graph) -> tuple:
         while queue:
             v = queue.pop(0)
             stack.append(v)
-            for neighbor, _ in graph.nodes[nodes[v]].neighbours:
-                w = nodes.index(neighbor)
+            for neighbor, _ in graph.nodes[node_names[v]].neighbours:
+                w = node_names.index(neighbor)
                 if distance[w] < 0:
                     queue.append(w)
                     distance[w] = distance[v] + 1
@@ -251,7 +251,7 @@ def betweenness_centrality(graph: Graph) -> tuple:
     if max_betweenness > 0:
         betweenness /= max_betweenness
 
-    top_betweenness_centrality_nodes = [nodes[i] for i in range(
+    top_betweenness_centrality_nodes = [node_names[i] for i in range(
         n) if betweenness[i] == numpy.max(betweenness)]
 
-    return betweenness, top_betweenness_centrality_nodes
+    return dict(zip(node_names, betweenness)), top_betweenness_centrality_nodes
