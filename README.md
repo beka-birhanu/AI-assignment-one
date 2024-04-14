@@ -42,3 +42,9 @@ Ensure that you have Python 3 installed on your system before running the script
 For any questions or issues, feel free to contact the repository owner.
 
 Happy analyzing!
+
+# Preview of Analysis PDF
+
+![Page 1](./preview-images/analysis-of-experments-images-1.png)
+![Page 2](./preview-images/analysis-of-experments-images-2.png)
+![Page 3](./preview-images/analysis-of-experments-images-4.png)
