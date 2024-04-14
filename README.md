@@ -1,13 +1,3 @@
-# Group Members
-
-| Name                | ID          |
-| ------------------- | ----------- |
-| Aderajew Yeshiwendm | UGR/3662/14 |
-| Beka Birhanu        | UGR/3402/14 |
-| Bereket Kelay       | UGR/9587/14 |
-| Ephrem Mamo         | UGR/1504/14 |
-| Yohannis Alemayew   | UGR/2497/14 |
-
 # Search Algorithms Performance Analysis
 
 ## Overview
