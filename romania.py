@@ -1,9 +1,7 @@
 from graph import Graph
-from graph_centrailities import *
+from graph_centralities import *
 from search_algorithms import *
 from utils import compute_heuristic
-import graph_centrailities
-
 
 romania = Graph()
 with open('cities.txt', 'r') as file:
