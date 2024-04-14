@@ -1,229 +1,257 @@
+from collections import deque
+from graph import Graph
 import numpy
 
 
-def adjacency_matrix(graph):
+def adjacency_matrix(graph: Graph) -> tuple:
+    """
+    Generates an adjacency matrix from a graph representation.
+
+    Args:
+        graph (Graph): The graph object representing the graph.
+
+    Returns:
+        tuple: A tuple containing the adjacency matrix and a list of node names.
+    """
+    num_nodes = len(graph.nodes)
     node_names = list(graph.nodes.keys())
-    adj_matrix = numpy.zeros((len(node_names), len(node_names)))
+    adjacency_matrix = [[0 for _ in range(num_nodes)]
+                        for _ in range(num_nodes)]
 
-    # Construct the adjacency matrix
-    for i, node_name in enumerate(node_names):
-        node = graph.nodes[node_name]
-        for neighbor_name, weight in node.neighbours:
-            j = node_names.index(neighbor_name)
-            adj_matrix[i, j] = weight
+    for node in graph.nodes.values():
+        row_index = node_names.index(node.name)
+        for neighbor, weight in node.neighbours:
+            try:
+                col_index = node_names.index(neighbor)
+                adjacency_matrix[row_index][col_index] = 1
+            except ValueError:
+                # Handle case where neighbor is not found in node_names
+                print(f"Error: Neighbor '{neighbor}' not found in node list.")
 
-    return adj_matrix
+    return adjacency_matrix, node_names
 
 
-def degree_centrality(graph):
-    degree_centralities = {}
-    number_of_nodes = len(graph.nodes)
+def degree_centrality(graph: Graph) -> tuple:
+    """
+    Calculates the degree centrality for each node in the graph.
 
-    # Calculate degree centrality for each node
+    Args:
+        graph (Graph): The graph object representing the graph.
+
+    Returns:
+        tuple: A tuple containing a dictionary of node centrality values and a list of nodes with the highest centrality.
+    """
+    centrality_scores = {}
+    total_nodes = len(graph.nodes)
+
+    # Calculate centrality scores for each node
     for node_name, node in graph.nodes.items():
-        degree_centralities[node_name] = len(node.neighbours) / number_of_nodes
+        centrality_scores[node_name] = len(node.neighbours) / total_nodes
 
-    # Find nodes with highest degree centrality
-    max_centrality = max(degree_centralities.values())
-    top_degree_centralities = [node_name for node_name, centrality in degree_centralities.items(
+    # Find nodes with the highest centrality
+    max_centrality = max(centrality_scores.values())
+    top_centrality_nodes = [node for node, centrality in centrality_scores.items(
     ) if centrality == max_centrality]
 
-    return degree_centralities, top_degree_centralities
+    return centrality_scores, top_centrality_nodes
 
 
-def floyd_warshall(adj_matrix):
-    n = len(adj_matrix)
-    dist = [[float('inf') if i != j and adj_matrix[i][j] ==
-             0 else adj_matrix[i][j] for j in range(n)] for i in range(n)]
+def closeness_centrality(graph: Graph) -> tuple:
+    """
+    Computes the closeness centrality for each node in the graph.
 
-    # Apply Floyd-Warshall algorithm
-    for k in range(n):
-        for i in range(n):
-            for j in range(n):
-                dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])
+    Args:
+        graph (romania.Graph): The graph object representing the graph.
 
-    return dist
+    Returns:
+        tuple: A tuple containing a list of closeness scores for all nodes and a list of nodes with the highest closeness centrality scores.
+    """
+    node_names = [node for node in graph.nodes]
+    closeness_scores = [0 for _ in range(len(node_names))]
 
+    top_ranked = []
+    max_closeness = 0
 
-def closeness_centrality(graph):
-    # Calculate the adjacency matrix
-    adj_matrix = adjacency_matrix(graph)
-    nodes = list(graph.nodes.keys())
+    for i in range(len(node_names)):
+        distances = {node: float('inf') for node in graph.nodes}
+        distances[node_names[i]] = 0
 
-    # Compute the shortest path distances using Floyd-Warshall algorithm
-    dist_matrix = floyd_warshall(adj_matrix)
-    n = len(adj_matrix)
-    centralities = []
+        queue = deque([node_names[i]])
+        while queue:
+            curr_node = queue.popleft()
+            for neighbor, cost in graph.nodes[curr_node].neighbours:
+                total_dist = distances[curr_node] + cost
+                if distances[neighbor] == float('inf'):
+                    distances[neighbor] = total_dist
+                    queue.append(neighbor)
+                if distances[neighbor] > total_dist:
+                    distances[neighbor] = total_dist
 
-    # Calculate closeness centrality for each node
-    for i in range(n):
-        reachable_nodes = sum(
-            1 for d in dist_matrix[i] if d != float('inf') and d != 0)
-        total_distance = sum(
-            d for d in dist_matrix[i] if d != float('inf') and d != 0)
+        sum_distances = sum(distances.values())
+        closeness_scores[i] = (len(node_names) - 1) / sum_distances
+        if closeness_scores[i] > max_closeness:
+            max_closeness = closeness_scores[i]
+            top_ranked = [(node_names[i], max_closeness)]
+        elif closeness_scores[i] == max_closeness:
+            top_ranked.append((node_names[i], max_closeness))
 
-        if total_distance == 0:
-            centralities.append(0.0)
-        else:
-            centralities.append(reachable_nodes / total_distance)
-
-    # Find nodes with highest closeness centrality
-    top_closeness_centralities = []
-    top = max(centralities)
-
-    for i in range(len(centralities)):
-        if centralities[i] == top:
-            top_closeness_centralities.append(nodes[i])
-
-    return centralities, top_closeness_centralities
+    return closeness_scores, top_ranked
 
 
-def eigenvector_centrality(graph, max_iter=200, tolerance=1e-6):
-    # Get the list of nodes and the adjacency matrix
-    nodes = list(graph.nodes.keys())
-    adj_matrix = adjacency_matrix(graph)
+def eigenvector_centrality(graph: Graph, max_iterations: int = 100, tolerance: float = 1e-6) -> tuple:
+    """
+    Computes the eigenvector centrality for each node in the graph using the power iteration method.
 
-    # Initialize centrality scores
-    centrality_scores = numpy.ones(len(nodes))
-    centrality_scores /= numpy.linalg.norm(centrality_scores)
+    Args:
+        graph (romania.Graph): The graph object representing the graph.
+        max_iterations (int): Maximum number of iterations for power iteration.
+        tolerance (float): Convergence criterion for the difference between successive centrality vectors.
 
-    # Perform power iteration method
-    for i in range(max_iter):
-        new_centrality_scores = numpy.dot(adj_matrix, centrality_scores)
-        new_centrality_scores /= numpy.linalg.norm(new_centrality_scores)
+    Returns:
+        tuple: A tuple containing a list of centrality values for all nodes and a list of nodes with the highest centrality values.
+    """
+    adj_matrix, node_names = adjacency_matrix(graph)
+    centrality_values = numpy.ones(len(adj_matrix))
+    centrality_values /= numpy.linalg.norm(centrality_values)
 
-        # Check for convergence
-        if numpy.linalg.norm(new_centrality_scores - centrality_scores, 2) < tolerance:
+    for _ in range(max_iterations):
+        new_centrality = numpy.dot(adj_matrix, centrality_values)
+        new_centrality /= numpy.linalg.norm(new_centrality)
+
+        if numpy.linalg.norm(new_centrality - centrality_values, 2) < tolerance:
             break
 
-        centrality_scores = new_centrality_scores
+        centrality_values = new_centrality
 
-    # Find nodes with highest eigenvector centrality
-    top_eigenvector_centralities = []
-    top = max(centrality_scores)
+    max_centrality = max(centrality_values)
+    top_centrality_nodes = [node_names[i] for i, centrality in enumerate(
+        centrality_values) if centrality == max_centrality]
 
-    for i in range(len(centrality_scores)):
-        if centrality_scores[i] == top:
-            top_eigenvector_centralities.append(nodes[i])
-
-    return centrality_scores, top_eigenvector_centralities
+    return centrality_values, top_centrality_nodes
 
 
-def pagerank_centrality(graph, d=0.85, max_iter=100, tolerance=1e-6):
-    # Get the list of nodes and the adjacency matrix
-    nodes = list(graph.nodes.keys())
-    adj_matrix = numpy.array(adjacency_matrix(graph))
-    length = len(nodes)
+def pagerank_centrality(graph: Graph, damping_factor: float = 0.85, max_iterations: int = 100, tolerance: float = 1e-6) -> tuple:
+    """
+    Computes the PageRank centrality for each node in the graph using the PageRank algorithm.
 
-    # Initialize centrality scores
-    centrality_scores = numpy.ones(length) / length
+    Args:
+        graph (Graph): The graph object representing the graph.
+        damping_factor (float): Damping factor for the PageRank algorithm.
+        max_iterations (int): Maximum number of iterations for convergence.
+        tolerance (float): Convergence criterion for the difference between successive PageRank vectors.
 
-    # Perform PageRank iteration
-    for i in range(max_iter):
-        sums = adj_matrix.sum(keepdims=True, axis=1)
-        transition = numpy.where(numpy.logical_and(sums != 0, numpy.isnan(
-            sums), ~numpy.isnan(adj_matrix)), adj_matrix / sums, 1 / length)
+    Returns:
+        tuple: A tuple containing a list of PageRank centrality values for all nodes and a list of nodes with the highest PageRank centrality values.
+    """
+    adj_matrix, node_names = adjacency_matrix(graph)
+    adj_matrix = numpy.array(adj_matrix)
+    num_nodes = len(adj_matrix)
+    pagerank_scores = numpy.ones(num_nodes) / num_nodes
 
-        new_centrality_scores = (1 - d) / length + \
-            d * numpy.dot(transition.T, centrality_scores)
+    for _ in range(max_iterations):
+        row_sums = adj_matrix.sum(axis=1, keepdims=True)
+        transition_matrix = numpy.where(numpy.logical_and(row_sums != 0, ~numpy.isnan(
+            row_sums), ~numpy.isnan(adj_matrix)), adj_matrix / row_sums, 1 / num_nodes)
+        new_pagerank_scores = (1 - damping_factor) / num_nodes + \
+            damping_factor * numpy.dot(transition_matrix.T, pagerank_scores)
+        if numpy.linalg.norm(new_pagerank_scores - pagerank_scores, 2) < tolerance:
+            break
+        pagerank_scores = new_pagerank_scores
 
-        # Check for convergence
-        if numpy.linalg.norm(new_centrality_scores - centrality_scores, 2) < tolerance:
+    max_centrality = max(pagerank_scores)
+    top_centrality_nodes = [node_names[i] for i in range(
+        len(pagerank_scores)) if pagerank_scores[i] == max_centrality]
+
+    return pagerank_scores, top_centrality_nodes
+
+
+def katz_centrality(graph: Graph, alpha: float = 0.1, beta: float = 1.0, max_iter: int = 100, tol: float = 1e-6) -> tuple:
+    """
+    Computes the Katz centrality for each node in the graph using the Katz centrality equation.
+
+    Args:
+        graph (romania.Graph): The graph object representing the graph.
+        alpha (float): Damping parameter for the influence of immediate neighbors.
+        beta (float): Scaling factor for the initial centrality values.
+        max_iter (int): Maximum number of iterations for convergence.
+        tol (float): Convergence criterion for the difference between successive centrality vectors.
+
+    Returns:
+        tuple: A tuple containing a list of centrality values for all nodes and a list of nodes with the highest centrality values.
+    """
+    adj_matrix, nodes = adjacency_matrix(graph)
+    n = len(adj_matrix)
+
+    ketz_centrality = numpy.zeros(n)
+    beta_array = numpy.full(n, beta)
+
+    for _ in range(max_iter):
+        new_ketz_centrality = alpha * \
+            numpy.dot(adj_matrix, ketz_centrality) + beta_array
+
+        if numpy.linalg.norm(new_ketz_centrality - ketz_centrality, 2) < tol:
             break
 
-        centrality_scores = new_centrality_scores
+        ketz_centrality = new_ketz_centrality
 
-    # Find nodes with highest PageRank centrality
-    top_pagerank_centralities = []
-    top = max(centrality_scores)
+    ketz_centrality /= numpy.linalg.norm(ketz_centrality)
 
-    for i in range(len(centrality_scores)):
-        if centrality_scores[i] == top:
-            top_pagerank_centralities.append(nodes[i])
+    max_centrality = max(ketz_centrality)
+    top_centrality_nodes = [(nodes[i], ketz_centrality[i])
+                            for i in range(n) if ketz_centrality[i] == max_centrality]
 
-    return centrality_scores, top_pagerank_centralities
+    return ketz_centrality, top_centrality_nodes
 
 
-def katz_centrality(graph, a=0.1, b=1.0, max_iter=100, tol=1e-6):
-    # Get the adjacency matrix and list of nodes
-    adj_matrix = adjacency_matrix(graph)
+def betweenness_centrality(graph: Graph) -> tuple:
+    """
+    Computes the betweenness centrality for each node in the graph.
+
+    Args:
+        graph (Graph): The graph object representing the graph.
+
+    Returns:
+        tuple: A tuple containing a list of betweenness centrality values for all nodes and a list of nodes with the highest betweenness centrality values.
+    """
     nodes = list(graph.nodes.keys())
     n = len(nodes)
-
-    # Initialize Katz centrality scores
-    katz_centrality = numpy.zeros(n)
-    b = numpy.full(n, b)
-
-    # Perform Katz centrality iteration
-    for _ in range(max_iter):
-        new_centrality = a * numpy.dot(adj_matrix, katz_centrality) + b
-
-        # Check for convergence
-        if numpy.linalg.norm(new_centrality - katz_centrality, 2) < tol:
-            break
-
-        katz_centrality = new_centrality
-
-    # Normalize Katz centrality scores
-    katz_centrality /= numpy.linalg.norm(katz_centrality)
-
-    # Find nodes with highest Katz centrality
-    top = max(katz_centrality)
-    top_katz_centralities = [nodes[i] for i, centrality in enumerate(
-        katz_centrality) if centrality == top]
-
-    return katz_centrality, top_katz_centralities
-
-
-def betweenness_centrality(graph):
-    # Get the adjacency matrix and list of vertices
-    adj_matrix = adjacency_matrix(graph)
-    vertices = list(graph.nodes.keys())
-    n = len(vertices)
-
-    # Initialize betweenness centrality scores
     betweenness = numpy.zeros(n)
 
-    # Iterate over all vertices
-    for i in range(n):
-        stack = []  # Stack for DFS
+    for s in range(n):
+        stack = []
         predecessors = [[] for _ in range(n)]
         num_shortest_paths = numpy.zeros(n)
         distance = numpy.full(n, -1)
-        distance[i] = 0
-        num_shortest_paths[i] = 1
+        distance[s] = 0
+        num_shortest_paths[s] = 1
 
-        queue = [i]
-        # Perform BFS to find shortest paths and predecessors
+        queue = [s]
         while queue:
             v = queue.pop(0)
             stack.append(v)
-            for w in range(n):
-                if adj_matrix[v][w] != 0:
-                    if distance[w] < 0:
-                        queue.append(w)
-                        distance[w] = distance[v] + 1
-                    if distance[w] == distance[v] + 1:
-                        num_shortest_paths[w] += num_shortest_paths[v]
-                        predecessors[w].append(v)
+            for neighbor, _ in graph.nodes[nodes[v]].neighbours:
+                w = nodes.index(neighbor)
+                if distance[w] < 0:
+                    queue.append(w)
+                    distance[w] = distance[v] + 1
+                if distance[w] == distance[v] + 1:
+                    num_shortest_paths[w] += num_shortest_paths[v]
+                    predecessors[w].append(v)
 
-        # Calculate delta values for each vertex
         delta = numpy.zeros(n)
         while stack:
             w = stack.pop()
             for v in predecessors[w]:
                 delta[v] += (num_shortest_paths[v] /
                              num_shortest_paths[w]) * (1 + delta[w])
-            if w != i:
+            if w != s:
                 betweenness[w] += delta[w]
 
-    # Normalize betweenness centrality scores
     max_betweenness = numpy.max(betweenness)
     if max_betweenness > 0:
         betweenness /= max_betweenness
 
-    # Find vertices with highest betweenness centrality
-    top_betweenness_centrality_nodes = [vertices[i] for i in range(
+    top_betweenness_centrality_nodes = [nodes[i] for i in range(
         n) if betweenness[i] == numpy.max(betweenness)]
 
     return betweenness, top_betweenness_centrality_nodes
